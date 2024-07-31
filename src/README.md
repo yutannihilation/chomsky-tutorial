@@ -1,4 +1,1 @@
-This is just my personal practice of [Chumsky](https://github.com/zesterer/chumsky)
-========
-
-虚無が好き。
+Chumsky's tutorial: https://github.com/zesterer/chumsky/blob/0.9/tutorial.md
