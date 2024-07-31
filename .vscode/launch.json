@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'kyomusky'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kyomusky",
+                    "--package=kyomusky"
+                ],
+                "filter": {
+                    "name": "kyomusky",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'kyomusky'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=kyomusky",
+                    "--package=kyomusky"
+                ],
+                "filter": {
+                    "name": "kyomusky",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
