@@ -26,7 +26,10 @@ enum Expr {
 }
 
 fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
-    filter(char::is_ascii_digit).map(|c| Expr::Num(c.to_digit(10).unwrap() as f64))
+    filter(char::is_ascii_digit)
+        .map(|c| Expr::Num(c.to_digit(10).unwrap() as f64))
+        .padded_by(filter(|c: &char| c.is_whitespace()).repeated())
+        .then_ignore(end())
 }
 
 fn main() {
