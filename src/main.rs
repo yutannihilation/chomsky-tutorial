@@ -1,3 +1,4 @@
+use ariadne::{Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
 
 #[derive(Debug)]
@@ -159,7 +160,7 @@ fn eval<'a>(
                 .collect::<Result<_, String>>()?;
 
             vars.append(&mut args_evaled);
-            let output = eval(&body, vars, fns);
+            let output = eval(body, vars, fns);
             vars.truncate(vars.len() - args_evaled.len());
             output
         }
@@ -175,8 +176,6 @@ fn eval<'a>(
             fns.pop();
             output
         }
-
-        _ => todo!(), // We'll handle other cases later
     }
 }
 
@@ -185,13 +184,21 @@ fn main() {
     let mut vars = Vec::new();
     let mut fns = Vec::new();
 
-    match parser().parse(src) {
+    match parser().parse(src.clone()) {
         Ok(ast) => match eval(&ast, &mut vars, &mut fns) {
             Ok(output) => println!("ast:  {ast:?}\neval: {output}"),
             Err(eval_err) => println!("Evaluation error: {}", eval_err),
         },
-        Err(parse_errs) => parse_errs
-            .into_iter()
-            .for_each(|e| println!("Parse error: {e}")),
+        Err(parse_errs) => {
+            for e in parse_errs {
+                let span = e.span();
+
+                Report::build(ReportKind::Error, (), ariadne::Span::start(&span))
+                    .with_label(Label::new(span).with_message(e.to_string()))
+                    .finish()
+                    .print(Source::from(src.as_str()))
+                    .unwrap();
+            }
+        }
     }
 }
