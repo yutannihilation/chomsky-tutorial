@@ -1,4 +1,4 @@
-use ariadne::{Label, Report, ReportKind, Source};
+use ariadne::{ColorGenerator, Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
 
 #[derive(Debug)]
@@ -180,7 +180,8 @@ fn eval<'a>(
 }
 
 fn main() {
-    let src = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
+    let path = std::env::args().nth(1).unwrap();
+    let src = std::fs::read_to_string(&path).unwrap();
     let mut vars = Vec::new();
     let mut fns = Vec::new();
 
@@ -190,13 +191,19 @@ fn main() {
             Err(eval_err) => println!("Evaluation error: {}", eval_err),
         },
         Err(parse_errs) => {
+            let mut colors = ColorGenerator::new();
             for e in parse_errs {
                 let span = e.span();
 
-                Report::build(ReportKind::Error, (), ariadne::Span::start(&span))
-                    .with_label(Label::new(span).with_message(e.to_string()))
+                Report::build(ReportKind::Error, &path, span.start)
+                    .with_message("Syntax error")
+                    .with_label(
+                        Label::new((&path, span))
+                            .with_message(e.to_string())
+                            .with_color(colors.next()),
+                    )
                     .finish()
-                    .print(Source::from(src.as_str()))
+                    .print((&path, Source::from(src.as_str())))
                     .unwrap();
             }
         }
