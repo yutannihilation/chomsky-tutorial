@@ -39,7 +39,20 @@ fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
         .then(atom)
         .foldr(|_op, rhs| Expr::Neg(Box::new(rhs)));
 
-    unary.then_ignore(end())
+    let mul = op('*').to(Expr::Mul as fn(_, _) -> _);
+    let div = op('/').to(Expr::Div as fn(_, _) -> _);
+    let add = op('+').to(Expr::Add as fn(_, _) -> _);
+    let sub = op('-').to(Expr::Sub as fn(_, _) -> _);
+
+    let product = unary
+        .then(mul.or(div).then(unary).repeated())
+        .foldl(|lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)));
+
+    let sum = product
+        .then(add.or(sub).then(product).repeated())
+        .foldl(|lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)));
+
+    sum.then_ignore(end())
 }
 
 fn eval(expr: &Expr) -> Result<f64, String> {
