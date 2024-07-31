@@ -60,8 +60,7 @@ fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
             .foldl(|lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)));
 
         sum
-    })
-    .then_ignore(end());
+    });
 
     let decl = recursive(|decl| {
         let r#let = text::keyword("let")
@@ -81,23 +80,41 @@ fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
     decl.then_ignore(end())
 }
 
-fn eval(expr: &Expr) -> Result<f64, String> {
+fn eval<'a>(expr: &'a Expr, vars: &mut Vec<(&'a String, f64)>) -> Result<f64, String> {
     match expr {
         Expr::Num(x) => Ok(*x),
-        Expr::Neg(a) => Ok(-eval(a)?),
-        Expr::Add(a, b) => Ok(eval(a)? + eval(b)?),
-        Expr::Sub(a, b) => Ok(eval(a)? - eval(b)?),
-        Expr::Mul(a, b) => Ok(eval(a)? * eval(b)?),
-        Expr::Div(a, b) => Ok(eval(a)? / eval(b)?),
+        Expr::Neg(a) => Ok(-eval(a, vars)?),
+        Expr::Add(a, b) => Ok(eval(a, vars)? + eval(b, vars)?),
+        Expr::Sub(a, b) => Ok(eval(a, vars)? - eval(b, vars)?),
+        Expr::Mul(a, b) => Ok(eval(a, vars)? * eval(b, vars)?),
+        Expr::Div(a, b) => Ok(eval(a, vars)? / eval(b, vars)?),
+
+        Expr::Var(name) => {
+            if let Some((_, val)) = vars.iter().rev().find(|(var, _)| *var == name) {
+                Ok(*val)
+            } else {
+                Err(format!("Cannot find variable `{name}` in scope"))
+            }
+        }
+
+        Expr::Let { name, rhs, then } => {
+            let rhs = eval(rhs, vars)?;
+            vars.push((name, rhs));
+            let output = eval(then, vars);
+            vars.pop();
+            output
+        }
+
         _ => todo!(), // We'll handle other cases later
     }
 }
 
 fn main() {
     let src = std::fs::read_to_string(std::env::args().nth(1).unwrap()).unwrap();
+    let vars = &mut Vec::new();
 
     match parser().parse(src) {
-        Ok(ast) => match eval(&ast) {
+        Ok(ast) => match eval(&ast, vars) {
             Ok(output) => println!("ast:  {ast:?}\neval: {output}"),
             Err(eval_err) => println!("Evaluation error: {}", eval_err),
         },

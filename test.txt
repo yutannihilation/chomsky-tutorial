@@ -1,2 +1,3 @@
 let five = 5;
-five * 3
+let three = 3;
+five * three
